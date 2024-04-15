@@ -1,5 +1,8 @@
-﻿using System;
+﻿using AForge.Video;
+using AForge.Video.DirectShow;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Management;
@@ -151,56 +154,85 @@ namespace WpfVLC
         //deinterlace {0 (关), -1 (自动), 1 (开)} scale小于1比如0.25
         private void openCamera_Click(object sender, RoutedEventArgs e)
         {
-            string cameraName = string.Empty;
-            ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Caption LIKE '%(IP)'");
-            foreach (ManagementObject obj in searcher.Get())
-            {
-                cameraName = obj["Caption"].ToString();
-                Console.WriteLine(cameraName);
-            }
+            #region 原有代码，在本机测试没成功，所以使用了Afoge 这个dll
+            //    string cameraName = string.Empty;
+            //    ManagementObjectSearcher searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Caption LIKE '%(IP)'");
+            //    foreach (ManagementObject obj in searcher.Get())
+            //    {
+            //        cameraName = obj["Caption"].ToString();
+            //        Console.WriteLine(cameraName);
+            //    }
 
-            string ed = "ts";
-            string dest  = Path.Combine(currentDirectory, $"record.{ed}");
-            string mrl = @"dshow://  ";
-            //string optVideo = @":dshow-vdev=c922 Pro Stream Webcam"; 
-            //string optAudio = @":dshow -adev=麦克风 (C922 Pro Stream Webcam)";
-            string optVideo = @":dshow-vdev=root\VIRTUALCAMERA";
-            string optAudio = @":dshow -adev=麦克风 (Sharing Microphone)";
+            //    string ed = "ts";
+            //    string dest  = Path.Combine(currentDirectory, $"record.{ed}");
+            //    string mrl = @"dshow://  ";
+            //    //string optVideo = @":dshow-vdev=c922 Pro Stream Webcam"; 
+            //    //string optAudio = @":dshow -adev=麦克风 (C922 Pro Stream Webcam)";
+            //    string optVideo = @":dshow-vdev=root\VIRTUALCAMERA";
+            //    string optAudio = @":dshow -adev=麦克风 (Sharing Microphone)";
 
-            
-            string size = ":dshow-size=800";
-        
-            var options = new[]
-            {
-                optVideo,
-                optAudio,
-                ":dshow-chroma=MJPG",//摄像头录像需要设置该参数，如果直接播放摄像头，不需要设置，该参数为将色彩空间（色度）设置为mjpg，默认为yuv2
-                //":dshow-video-input=-1",
-                //":dshow-video-output=-1",
-                //":no-dshow-config",
-                //":no-dshow-tuner",
-                //":dshow-tuner-frequency=0",
-                ":dshow-tuner-country=0",//不设置这个，录像没有声音，原因不明
-                //":dshow-tuner-standard=0",
-                //":dshow-audio-input=-1",
-                //":dshow-audio-output=-1",
-                //":dshow-audio-channels=0",
-                //":dshow-amtuner-mode=1",
-                //":dshow-audio-samplerate=0",
-                //":dshow-audio-bitspersample=0",
-                ":live-caching = 0",//本地缓存毫秒数 
-                size, 
-                ":sout-keep",// 持续开启串流输出 (默认关闭)
-                ":sout-all",
-                ":sout=#transcode{vcodec=h264,fps=25,venc=x264{preset=ultrafast,profile=baseline,tune=zerolatency},scale=1,acodec=mpga,ab=128,channels=2,samplerate=44100}:duplicate{dst=display,dst=std{access=file,mux="+ed+",dst=" +dest+"}}",
-                //":sout=#transcode{vcodec=h264,fps=25,venc=x264{preset=ultrafast,profile=baseline,tune=zerolatency},scale=1,acodec=mpga,ab=128,channels=2,samplerate=44100}:duplicate{dst=display,dst=rtp{dst=127.0.0.1,mux=ts,port=1234}}";  将摄像头以rtp形式传给本地1234端口
-                //":sout=#transcode{vcodec=h264,fps=25,venc=x264{preset=ultrafast,profile=baseline,tune=zerolatency},scale=1,acodec=mpga,ab=128,channels=2,samplerate=44100}:duplicate{dst=display,dst=rtp{sdp=rtsp://:5544/cam}}"//将本地摄像头发送到本地rtsp流，端口5544 
 
-            //":sout=#duplicate{dst=display,dst=std{access=file,mux="+ed+",dst=" +dest+"}}",//可以录像，但是该录像视频太大，建议转码后录像,并且不录制声音  
-        };
-            this.VlcControl.SourceProvider.MediaPlayer.ResetMedia();//不设置，第二次录像将无声音
-            this.VlcControl.SourceProvider.MediaPlayer.Play(mrl, options); 
+            //    string size = ":dshow-size=800";
+
+            //    var options = new[]
+            //    {
+            //        optVideo,
+            //        optAudio,
+            //        ":dshow-chroma=MJPG",//摄像头录像需要设置该参数，如果直接播放摄像头，不需要设置，该参数为将色彩空间（色度）设置为mjpg，默认为yuv2
+            //        //":dshow-video-input=-1",
+            //        //":dshow-video-output=-1",
+            //        //":no-dshow-config",
+            //        //":no-dshow-tuner",
+            //        //":dshow-tuner-frequency=0",
+            //        ":dshow-tuner-country=0",//不设置这个，录像没有声音，原因不明
+            //        //":dshow-tuner-standard=0",
+            //        //":dshow-audio-input=-1",
+            //        //":dshow-audio-output=-1",
+            //        //":dshow-audio-channels=0",
+            //        //":dshow-amtuner-mode=1",
+            //        //":dshow-audio-samplerate=0",
+            //        //":dshow-audio-bitspersample=0",
+            //        ":live-caching = 0",//本地缓存毫秒数 
+            //        size, 
+            //        ":sout-keep",// 持续开启串流输出 (默认关闭)
+            //        ":sout-all",
+            //        ":sout=#transcode{vcodec=h264,fps=25,venc=x264{preset=ultrafast,profile=baseline,tune=zerolatency},scale=1,acodec=mpga,ab=128,channels=2,samplerate=44100}:duplicate{dst=display,dst=std{access=file,mux="+ed+",dst=" +dest+"}}",
+            //        //":sout=#transcode{vcodec=h264,fps=25,venc=x264{preset=ultrafast,profile=baseline,tune=zerolatency},scale=1,acodec=mpga,ab=128,channels=2,samplerate=44100}:duplicate{dst=display,dst=rtp{dst=127.0.0.1,mux=ts,port=1234}}";  将摄像头以rtp形式传给本地1234端口
+            //        //":sout=#transcode{vcodec=h264,fps=25,venc=x264{preset=ultrafast,profile=baseline,tune=zerolatency},scale=1,acodec=mpga,ab=128,channels=2,samplerate=44100}:duplicate{dst=display,dst=rtp{sdp=rtsp://:5544/cam}}"//将本地摄像头发送到本地rtsp流，端口5544 
+
+            //    //":sout=#duplicate{dst=display,dst=std{access=file,mux="+ed+",dst=" +dest+"}}",//可以录像，但是该录像视频太大，建议转码后录像,并且不录制声音  
+            //};
+            //    this.VlcControl.SourceProvider.MediaPlayer.ResetMedia();//不设置，第二次录像将无声音
+            //    this.VlcControl.SourceProvider.MediaPlayer.Play(mrl, options); 
+            #endregion
+
+            FilterInfoCollection videoDevices;
+            VideoCaptureDevice videoSource;
+
+            // 枚举所有的视频输入设备
+            videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+            if (videoDevices.Count == 0)
+                throw new ApplicationException();
+
+            // 创建视频源
+            videoSource = new VideoCaptureDevice(videoDevices[0].MonikerString);
+            //videoSource.NewFrame += new NewFrameEventHandler(video_NewFrame);
+
+            // 设置视频源的属性（例如分辨率和帧率）
+            // videoSource.VideoResolution = videoSource.VideoCapabilities[0];
+
+            // 开始接收视频帧
+            videoSource.Start();
         }
+
+        //private void video_NewFrame(object sender, NewFrameEventArgs eventArgs)
+        //{
+        //    Bitmap bitmap = (Bitmap)eventArgs.Frame.Clone();
+        //    VideoCaptureDeviceControl control = new VideoCaptureDeviceControl();
+        //    control.Dock = DockStyle.Fill;
+        //    control.VideoSource = videoSource;
+        //    displayForm.Controls.Add(control);
+        //}
 
         public void pause_Click(object sender, RoutedEventArgs e)
         {
