@@ -31,6 +31,10 @@ namespace WpfVLC
                 player.VideoSource = videoDevice; //设置源
                 player.Start(); //启动
             }
+
+            // 拍照
+            //player.GetCurrentVideoFrame();
+
         }
     }
 }
